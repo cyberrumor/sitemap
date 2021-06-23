@@ -29,8 +29,10 @@ def get_links(url, soup, blacklist):
             u = urllib.parse.urljoin(url, href)
             r = u.split('?')[0]
             l = r.split('#')[0]
-            url = l.rstrip('/')
+            clean = l.rstrip('None')
+            url = clean.rstrip('/')
             hrefs.append(url)
+
     for link in hrefs:
         if link.lower().count('logout') != 0:
             hrefs.pop(hrefs.index(link))
@@ -61,7 +63,8 @@ def get_robots(url, blacklist):
                 u = urllib.parse.urljoin(url, word)
                 r = u.split('?')[0]
                 l = r.split('#')[0]
-                url = l.rstrip('/')
+                clean = l.rstrip('None')
+                url = clean.rstrip('/')
                 hrefs.append(url)
 
     return hrefs
