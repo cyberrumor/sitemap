@@ -12,7 +12,7 @@ def get_links(url, soup, blacklist):
         href = str(link.get('href'))
         if not href.startswith('http') or href.startswith(url):
 
-            if href.endswith('../') or href.endswith('.pdf'):
+            if href.endswith('../'):
                 continue
 
             if any([href.count(i) for i in blacklist]):
@@ -80,8 +80,9 @@ if __name__ == '__main__':
         url = sys.argv[-1]
         blacklist = sys.argv[1:-1]
     else:
-        print('Usage: python3 main.py docs comment https://localhost.com')
-        print('Usage: python3 main.py $(cat blacklist.txt) https://localhost.com')
+        print('Usage: python3 main.py https://localhost.com')
+        print('Usage with blacklist cli: python3 main.py docs pdf jpg png mp4 mp3 https://localhost.com')
+        print('Usage with blacklist file: python3 main.py $(cat blacklist.txt) https://localhost.com')
         exit()
 
     s = requests.Session()
