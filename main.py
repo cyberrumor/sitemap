@@ -29,13 +29,18 @@ def get_links(url, soup, blacklist):
             u = urllib.parse.urljoin(url, href)
             r = u.split('?')[0]
             l = r.split('#')[0]
-            clean = l.rstrip('None')
-            url = clean.rstrip('/')
-            hrefs.append(url)
 
-    for link in hrefs:
-        if link.lower().count('logout') != 0:
-            hrefs.pop(hrefs.index(link))
+            if l.count('None'):
+                clean = l.rstrip('None')
+            else:
+                clean = l
+
+            if clean.endswith('/'):
+                url = clean.rstrip('/')
+            else:
+                url = clean
+
+            hrefs.append(url)
 
     return hrefs, emails
 
@@ -75,7 +80,8 @@ if __name__ == '__main__':
         url = sys.argv[-1]
         blacklist = sys.argv[1:-1]
     else:
-        print('Usage: python3 main.py "docs" "comment" "https://localhost.com"')
+        print('Usage: python3 main.py docs comment https://localhost.com')
+        print('Usage: python3 main.py $(cat blacklist.txt) https://localhost.com')
         exit()
 
     s = requests.Session()
