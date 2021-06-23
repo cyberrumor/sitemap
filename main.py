@@ -15,7 +15,8 @@ def get_links(url, soup, blacklist):
             if href.endswith('../'):
                 continue
 
-            if any([href.count(i) for i in blacklist]):
+            # check blacklist and also ensure accuracy of href collection
+            if any([href.count(i) for i in blacklist] + ['<', '>']):
                 continue
 
             if href.startswith('mailto:'):
@@ -56,12 +57,16 @@ def get_robots(url, blacklist):
 
         for word in line.split(' '):
             if not word.startswith('http') or word.startswith(url):
-                if word.endswith('../') or word.endswith('.pdf'):
+
+                if word.endswith('../'):
                     continue
-                if any([word.count(i) for i in blacklist]):
+
+                if any([word.count(i) for i in blacklist] + ['<', '>']):
                     continue
+
                 if word in ['user-agent:', 'disallow:', 'sitemap:']:
                     continue
+
                 if not word.count('/'):
                     continue
 
