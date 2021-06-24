@@ -16,7 +16,11 @@ def get_links(url, soup, blacklist):
                 continue
 
             # check blacklist and also ensure accuracy of href collection
-            if any([href.count(i) for i in blacklist] + ['<', '>']):
+            if any([href.count(i) for i in blacklist]):
+                continue
+
+            # filter bad href collections
+            if href.count('<') or href.count('>'):
                 continue
 
             if href.startswith('mailto:'):
@@ -45,6 +49,36 @@ def get_links(url, soup, blacklist):
 
     return hrefs, emails
 
+def get_forms(url, soup, blacklist):
+    forms = []
+    for form in soup.find_all('form'):
+        href = form.attrs.get('action')
+        if not href.startswith('http') or href.startswith(url):
+            if href.endswith('../'):
+                continue
+            if any([href.count(i) for i in blacklist]):
+                continue
+            if href.count('<') or href.count('>'):
+                continue
+            u = urllib.parse.urljoin(url, href)
+            r = u.split('?')[0]
+            l = r.split('#')[0]
+            if l.count('None'):
+                clean = l.rstrip('None')
+            else:
+                clean = l
+            if clean.endswith('/'):
+                url = clean.rstrip('/')
+            else:
+                url = clean
+
+            forms.append(url)
+
+    return forms
+
+
+
+
 def get_robots(url, blacklist):
     hrefs = []
     try:
@@ -61,7 +95,10 @@ def get_robots(url, blacklist):
                 if word.endswith('../'):
                     continue
 
-                if any([word.count(i) for i in blacklist] + ['<', '>']):
+                if any([word.count(i) for i in blacklist]):
+                    continue
+
+                if word.count('<') or word.count('>'):
                     continue
 
                 if word in ['user-agent:', 'disallow:', 'sitemap:']:
@@ -84,6 +121,7 @@ if __name__ == '__main__':
     if sys.argv[1:]:
         url = sys.argv[-1]
         blacklist = sys.argv[1:-1]
+
     else:
         print('Usage: python3 main.py https://localhost.com')
         print('Usage with blacklist cli: python3 main.py docs pdf jpg png mp4 mp3 https://localhost.com')
@@ -101,20 +139,22 @@ if __name__ == '__main__':
             webmap.append({'url': href})
 
     emails = []
+    forms = []
     i = 0
     rate_limit = 0
-    with open('output.txt', 'w') as output:
+    with open('output.txt', 'w') as output, open('emails.txt', 'w') as email_output, open('forms.txt', 'w') as form_output:
         while i < len([target['url'] for target in webmap]):
             # we pick up some jankiness from /robots.txt
             if webmap[i]['url'].count('*'):
                 output.write(f"{webmap[i]['url']}\n")
                 print(f'skipping: {webmap[i]["url"]}')
+                i += 1
                 continue
 
             print(f'scanning: {webmap[i]["url"]}')
             # raise rate limit if we error out on request.
             try:
-                r = s.get(webmap[i]['url'])
+                r = s.get(webmap[i]['url'], timeout = 2)
             except Exception as e:
                 rate_limit += 1
                 print(f'error: {e}')
@@ -125,25 +165,32 @@ if __name__ == '__main__':
             # make soup
             soup = BeautifulSoup(r.text, 'lxml')
 
-            # expand list of targets via parsing for hrefs sharing target's domain
+            # get forms and write them to forms.txt
+            all_forms = get_forms(r.url, soup, blacklist)
+            for form in all_forms:
+                if form not in forms:
+                    forms.append(form)
+                    form_output.write(f'{form}\n')
+
+            # get hrefs and emails, add emails to emails.txt
             all_hrefs, all_emails = get_links(r.url, soup, blacklist)
-            hrefs = []
             for email in all_emails:
                 if email not in emails:
                     emails.append(email)
-                    with open('emails.txt', 'a') as email_output:
-                        email_output.write(f'{email}\n')
+                    email_output.write(f'{email}\n')
 
+            # de-duplicate hrefs
+            hrefs = []
             for ref in all_hrefs:
                 if ref not in hrefs:
                     hrefs.append(ref)
 
+            # add unique links to webmap, write them to output.txt
             webmap_links = [target['url'] for target in webmap]
             for ref in hrefs:
                 if ref not in webmap_links:
                     webmap.append({'url': str(ref)})
                     output.write(f'{ref}\n')
-
 
             sleep(rate_limit)
             i += 1
