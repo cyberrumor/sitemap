@@ -53,6 +53,8 @@ def get_forms(url, soup, blacklist):
     forms = []
     for form in soup.find_all('form'):
         href = form.attrs.get('action')
+        if not href:
+            continue
         if not href.startswith('http') or href.startswith(url):
             if href.endswith('../'):
                 continue
