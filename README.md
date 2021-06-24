@@ -1,5 +1,5 @@
 # sitemap
-Get all hrefs, including robots.txt and previously collected hrefs.
+Crawl a website for hrefs, emails, and form action pages.
 
 Accepts blacklists from the command line (or via concatenating a blacklist file) and also collects emails.
 
