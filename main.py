@@ -5,23 +5,36 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 
+def sanitize(href, url, blacklist):
+    if href.endswith('../'):
+        return
+    if any([href.count(i) for i in blacklist]):
+        return
+    if href.count('<') or href.count('>'):
+        return
+
+    u = urllib.parse.urljoin(url, href)
+    r = u.split('?')[0]
+    l = r.split('#')[0]
+
+    if l.count('none'):
+        clean = l.rstrip('none')
+    else:
+        clean = l
+
+    if clean.endswith('/'):
+        return clean.rstrip('/')
+    else:
+        return clean
+
+
+
 def get_links(url, soup, blacklist):
     emails = []
     hrefs = []
     for link in soup.find_all('a'):
         href = str(link.get('href'))
         if not href.startswith('http') or href.startswith(url):
-
-            if href.endswith('../'):
-                continue
-
-            # check blacklist and also ensure accuracy of href collection
-            if any([href.count(i) for i in blacklist]):
-                continue
-
-            # filter bad href collections
-            if href.count('<') or href.count('>'):
-                continue
 
             if href.startswith('mailto:'):
                 emails.append(href.lstrip('mailto:').lower())
@@ -31,21 +44,9 @@ def get_links(url, soup, blacklist):
                 emails.append(href.lower())
                 continue
 
-            u = urllib.parse.urljoin(url, href)
-            r = u.split('?')[0]
-            l = r.split('#')[0]
-
-            if l.count('None'):
-                clean = l.rstrip('None')
-            else:
-                clean = l
-
-            if clean.endswith('/'):
-                url = clean.rstrip('/')
-            else:
-                url = clean
-
-            hrefs.append(url)
+            result = sanitize(href.lower(), url, blacklist)
+            if result:
+                hrefs.append(result)
 
     return hrefs, emails
 
@@ -53,33 +54,17 @@ def get_forms(url, soup, blacklist):
     forms = []
     for form in soup.find_all('form'):
         href = form.attrs.get('action')
+
         if not href:
             continue
-        if not href.startswith('http') or href.startswith(url):
-            if href.endswith('../'):
-                continue
-            if any([href.count(i) for i in blacklist]):
-                continue
-            if href.count('<') or href.count('>'):
-                continue
-            u = urllib.parse.urljoin(url, href)
-            r = u.split('?')[0]
-            l = r.split('#')[0]
-            if l.count('None'):
-                clean = l.rstrip('None')
-            else:
-                clean = l
-            if clean.endswith('/'):
-                url = clean.rstrip('/')
-            else:
-                url = clean
 
-            forms.append(url)
+        if not href.startswith('http') or href.startswith(url):
+
+            result = sanitize(href.lower(), url, blacklist)
+            if result:
+                forms.append(result)
 
     return forms
-
-
-
 
 def get_robots(url, blacklist):
     hrefs = []
@@ -94,27 +79,12 @@ def get_robots(url, blacklist):
         for word in line.split(' '):
             if not word.startswith('http') or word.startswith(url):
 
-                if word.endswith('../'):
-                    continue
-
-                if any([word.count(i) for i in blacklist]):
-                    continue
-
-                if word.count('<') or word.count('>'):
-                    continue
-
                 if word in ['user-agent:', 'disallow:', 'sitemap:']:
                     continue
 
-                if not word.count('/'):
-                    continue
-
-                u = urllib.parse.urljoin(url, word)
-                r = u.split('?')[0]
-                l = r.split('#')[0]
-                clean = l.rstrip('None')
-                url = clean.rstrip('/')
-                hrefs.append(url)
+                result = sanitize(word.lower(), url, blacklist)
+                if result:
+                    hrefs.append(result)
 
     return hrefs
 
@@ -156,7 +126,7 @@ if __name__ == '__main__':
             print(f'scanning: {webmap[i]["url"]}')
             # raise rate limit if we error out on request.
             try:
-                r = s.get(webmap[i]['url'], timeout = 2)
+                r = s.get(webmap[i]['url'], timeout = rate_limit + 1)
             except Exception as e:
                 rate_limit += 1
                 print(f'error: {e}')
