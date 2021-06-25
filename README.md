@@ -1,5 +1,8 @@
 # sitemap
-Crawl a website for hrefs, emails, and form action pages.
+Collects a domain's internal pages, subdomains, form action pages, emails, and external hrefs.
+
+
+This is technically a spider, not a fuzzer. It's way faster than a fuzzer because it doesn't have to guess locations to find them.
 
 Accepts blacklists from the command line (or via concatenating a blacklist file) and also collects emails.
 
