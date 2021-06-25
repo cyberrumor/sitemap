@@ -49,7 +49,7 @@ def get_links(url, soup, blacklist):
                 continue
 
             result = sanitize(href.lower(), url, blacklist)
-            if result:
+            if result and result not in hrefs:
                 hrefs.append(result)
 
     return hrefs, emails
@@ -58,7 +58,6 @@ def get_forms(url, soup, blacklist):
     forms = []
     for form in soup.find_all('form'):
         href = form.attrs.get('action')
-
         if not href:
             continue
 
@@ -83,7 +82,10 @@ def get_robots(url, blacklist):
             # skip comments.
             continue
 
-        if line.startswith('user-agent') or line.startswith('crawl-delay'):
+        if any([
+        line.startswith('user-agent'),
+        line.startswith('crawl-delay'),
+        line.startswith('daumwebmastertool'), ]): 
             # these lines have useless key:values for us. skip.
             continue
 
@@ -168,15 +170,9 @@ if __name__ == '__main__':
                     emails.append(email)
                     e_out.write(f'{email}\n')
 
-            # de-duplicate hrefs
-            hrefs = []
-            for ref in all_hrefs:
-                if ref not in hrefs:
-                    hrefs.append(ref)
-
             # add unique links to webmap, write them to out.txt
             webmap_links = [target['url'] for target in webmap]
-            for ref in hrefs:
+            for ref in all_hrefs:
                 if ref not in webmap_links:
                     webmap.append({'url': str(ref)})
                     out.write(f'{ref}\n')
