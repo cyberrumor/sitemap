@@ -6,11 +6,17 @@ from bs4 import BeautifulSoup
 import urllib.parse
 
 def sanitize(href, url, blacklist):
+
     if href.endswith('../'):
         return
+
     if any([href.count(i) for i in blacklist]):
         return
+
     if href.count('<') or href.count('>'):
+        return
+
+    if href.count('javascript:void(0)'):
         return
 
     u = urllib.parse.urljoin(url, href)
@@ -26,8 +32,6 @@ def sanitize(href, url, blacklist):
         return clean.rstrip('/')
     else:
         return clean
-
-
 
 def get_links(url, soup, blacklist):
     emails = []
@@ -75,11 +79,19 @@ def get_robots(url, blacklist):
         return hrefs
 
     for line in r.text.lower().split('\n'):
+        if line.startswith('#'):
+            # skip comments.
+            continue
+
+        if line.startswith('user-agent') or line.startswith('crawl-delay'):
+            # these lines have useless key:values for us. skip.
+            continue
 
         for word in line.split(' '):
             if not word.startswith('http') or word.startswith(url):
 
-                if word in ['user-agent:', 'disallow:', 'sitemap:']:
+                if word in ['disallow:', 'allow:', 'sitemap:']:
+                    # these are keys, we only care about the values. skip.
                     continue
 
                 result = sanitize(word.lower(), url, blacklist)
