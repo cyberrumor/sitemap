@@ -6,16 +6,12 @@ from bs4 import BeautifulSoup
 import urllib.parse
 
 def sanitize(href, url, blacklist):
-
     if href.endswith('../'):
         return
-
     if any([href.count(i) for i in blacklist]):
         return
-
     if href.count('<') or href.count('>'):
         return
-
     if href.count('javascript:void(0)'):
         return
 
@@ -33,12 +29,17 @@ def sanitize(href, url, blacklist):
     else:
         return clean
 
-def get_links(url, soup, blacklist):
+def get_links(master, dom, url, soup, blacklist):
     emails = []
     hrefs = []
+    subs = []
+    misc = []
+
     for link in soup.find_all('a'):
-        href = str(link.get('href'))
-        if not href.startswith('http') or href.startswith(url):
+        href = str(link.get('href')).lower().rstrip('/')
+
+        # collect domain/s
+        if not href.startswith('http') or href.startswith(master):
 
             if href.startswith('mailto:'):
                 emails.append(href.lstrip('mailto:').lower())
@@ -48,11 +49,22 @@ def get_links(url, soup, blacklist):
                 emails.append(href.lower())
                 continue
 
-            result = sanitize(href.lower(), url, blacklist)
+            result = sanitize(href, url, blacklist)
             if result and result not in hrefs:
                 hrefs.append(result)
 
-    return hrefs, emails
+        # collect sub.domains
+        elif href.split('.', 1)[-1].startswith(dom):
+            result = href[0:href.find(dom) + len(dom)]
+            if result not in subs:
+                subs.append(result)
+
+        # eww, gross!
+        else:
+            if href not in misc:
+                misc.append(href)
+
+    return hrefs, emails, subs, misc
 
 def get_forms(url, soup, blacklist):
     forms = []
@@ -61,9 +73,10 @@ def get_forms(url, soup, blacklist):
         if not href:
             continue
 
+        href = href.lower()
         if not href.startswith('http') or href.startswith(url):
 
-            result = sanitize(href.lower(), url, blacklist)
+            result = sanitize(href, url, blacklist)
             if result:
                 forms.append(result)
 
@@ -96,7 +109,7 @@ def get_robots(url, blacklist):
                     # these are keys, we only care about the values. skip.
                     continue
 
-                result = sanitize(word.lower(), url, blacklist)
+                result = sanitize(word, url, blacklist)
                 if result:
                     hrefs.append(result)
 
@@ -105,7 +118,7 @@ def get_robots(url, blacklist):
 
 if __name__ == '__main__':
     if sys.argv[1:]:
-        url = sys.argv[-1]
+        master = sys.argv[-1]
         blacklist = sys.argv[1:-1]
 
     else:
@@ -114,24 +127,34 @@ if __name__ == '__main__':
         print('Usage with blacklist file: python3 main.py $(cat blacklist.txt) https://localhost.com')
         exit()
 
+    dom = master.split('https://')[-1]
+    dom = dom.split('http://')[-1]
+    dom = dom.split('www.')[-1]
+    dom = dom.split('/')[0]
+
     s = requests.Session()
-    r = s.get(url)
+    r = s.get(master)
     r.raise_for_status()
 
     webmap = [{'url': r.url}]
-    robolinks = get_robots(url, blacklist)
+    robolinks = get_robots(master, blacklist)
     for href in robolinks:
         if href.rstrip('/') not in [i['url'] for i in webmap]:
             webmap.append({'url': href})
 
     emails = []
     forms = []
+    subs = []
+    misc = []
+
     i = 0
     rate_limit = 0
 
     with (
     open('out.txt', 'w') as out,
     open('emails.txt', 'w') as e_out,
+    open('subs.txt', 'w') as s_out,
+    open('misc.txt', 'w') as m_out,
     open('forms.txt', 'w') as f_out):
 
         while i < len([target['url'] for target in webmap]):
@@ -163,14 +186,35 @@ if __name__ == '__main__':
                     forms.append(form)
                     f_out.write(f'{form}\n')
 
-            # get hrefs and emails, add emails to emails.txt
-            all_hrefs, all_emails = get_links(r.url, soup, blacklist)
+            # get hrefs, emails, sub domains.
+            all_hrefs, all_emails, all_subs, all_x = get_links(
+                    master,
+                    dom,
+                    r.url,
+                    soup,
+                    blacklist
+                )
+
+
+            # sort emails
             for email in all_emails:
                 if email not in emails:
                     emails.append(email)
                     e_out.write(f'{email}\n')
 
-            # add unique links to webmap, write them to out.txt
+            # sort sub domains
+            for sub in all_subs:
+                if sub not in subs:
+                    subs.append(sub)
+                    s_out.write(f'{sub}\n')
+
+            # sort misc
+            for m in all_x:
+                if m not in misc:
+                    misc.append(m)
+                    m_out.write(f'{m}\n')
+
+            # sort urls
             webmap_links = [target['url'] for target in webmap]
             for ref in all_hrefs:
                 if ref not in webmap_links:
