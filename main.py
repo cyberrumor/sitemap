@@ -126,11 +126,16 @@ if __name__ == '__main__':
     forms = []
     i = 0
     rate_limit = 0
-    with open('output.txt', 'w') as output, open('emails.txt', 'w') as email_output, open('forms.txt', 'w') as form_output:
+
+    with (
+    open('out.txt', 'w') as out,
+    open('emails.txt', 'w') as e_out,
+    open('forms.txt', 'w') as f_out):
+
         while i < len([target['url'] for target in webmap]):
             # we pick up some jankiness from /robots.txt
             if webmap[i]['url'].count('*'):
-                output.write(f"{webmap[i]['url']}\n")
+                out.write(f"{webmap[i]['url']}\n")
                 print(f'skipping: {webmap[i]["url"]}')
                 i += 1
                 continue
@@ -154,14 +159,14 @@ if __name__ == '__main__':
             for form in all_forms:
                 if form not in forms:
                     forms.append(form)
-                    form_output.write(f'{form}\n')
+                    f_out.write(f'{form}\n')
 
             # get hrefs and emails, add emails to emails.txt
             all_hrefs, all_emails = get_links(r.url, soup, blacklist)
             for email in all_emails:
                 if email not in emails:
                     emails.append(email)
-                    email_output.write(f'{email}\n')
+                    e_out.write(f'{email}\n')
 
             # de-duplicate hrefs
             hrefs = []
@@ -169,12 +174,12 @@ if __name__ == '__main__':
                 if ref not in hrefs:
                     hrefs.append(ref)
 
-            # add unique links to webmap, write them to output.txt
+            # add unique links to webmap, write them to out.txt
             webmap_links = [target['url'] for target in webmap]
             for ref in hrefs:
                 if ref not in webmap_links:
                     webmap.append({'url': str(ref)})
-                    output.write(f'{ref}\n')
+                    out.write(f'{ref}\n')
 
             sleep(rate_limit)
             i += 1
