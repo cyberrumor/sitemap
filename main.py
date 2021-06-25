@@ -19,15 +19,12 @@ def sanitize(href, url, blacklist):
     r = u.split('?')[0]
     l = r.split('#')[0]
 
-    if l.count('none'):
-        clean = l.rstrip('none')
-    else:
-        clean = l
-
+    clean = l.split('none')[0]
     if clean.endswith('/'):
         return clean.rstrip('/')
-    else:
-        return clean
+    return clean
+
+
 
 def get_links(master, dom, url, soup, blacklist):
     emails = []
