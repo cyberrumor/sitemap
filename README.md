@@ -4,7 +4,7 @@ Collects a domain's internal pages, subdomains, form action pages, emails, and e
 
 This is technically a spider, not a fuzzer. It's way faster than a fuzzer because it doesn't have to guess locations to find them.
 
-Accepts blacklists from the command line (or via concatenating a blacklist file) and also collects emails.
+Accepts blacklists from the command line (or via concatenating a blacklist file).
 
 It will try to stay on the same domain, but some anomolous behavior prevents me from
 
