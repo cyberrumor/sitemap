@@ -27,7 +27,6 @@ def sanitize(href, url, blacklist):
     return clean
 
 
-
 def get_links(master, dom, url, soup, blacklist):
     emails = []
     hrefs = []
@@ -108,8 +107,6 @@ def get_click(url, soup, blacklist):
                     sources.append(result)
     return sources
 
-
-
 def get_robots(url, blacklist):
     hrefs = []
     try:
@@ -163,7 +160,6 @@ if __name__ == '__main__':
 
     os.mkdir(folder)
 
-
     dom = master.split('https://')[-1]
     dom = dom.split('http://')[-1]
     dom = dom.split('www.')[-1]
@@ -173,11 +169,11 @@ if __name__ == '__main__':
     r = s.get(master)
     r.raise_for_status()
 
-    webmap = [{'url': r.url}]
+    webmap = []
     robolinks = get_robots(master, blacklist)
     for href in robolinks:
-        if href.rstrip('/') not in [i['url'] for i in webmap]:
-            webmap.append({'url': href})
+        if href.rstrip('/') not in webmap:
+            webmap.append(href)
 
     emails = []
     forms = []
@@ -189,99 +185,107 @@ if __name__ == '__main__':
     i = 0
     rate_limit = 0
 
-    with (
-    open(folder + '/internal_pages.txt', 'w') as out,
-    open(folder + '/emails.txt', 'w') as e_out,
-    open(folder + '/sub_domains.txt', 'w') as s_out,
-    open(folder + '/external_hrefs.txt', 'w') as m_out,
-    open(folder + '/src_locations.txt', 'w') as src_out,
-    open(folder + '/onclick.txt', 'w') as c_out,
-    open(folder + '/forms.txt', 'w') as f_out):
 
-        while i < len([target['url'] for target in webmap]):
-            # we pick up some jankiness from /robots.txt
-            if webmap[i]['url'].count('*'):
-                out.write(f"{webmap[i]['url']}\n")
-                print(f'skipping: {webmap[i]["url"]}')
-                i += 1
-                continue
-
-            print(f'scanning: {webmap[i]["url"]}')
-            # raise rate limit if we error out on request.
-            try:
-                r = s.get(webmap[i]['url'], timeout = rate_limit + 1)
-            except Exception as e:
-                rate_limit += 1
-                print(f'error: {e}')
-                print(f'raising rate limit to {rate_limit}')
-                i += 1
-                continue
-
-            # make soup
-            soup = BeautifulSoup(r.text, 'lxml')
-
-            # get forms and write them to forms.txt
-            all_forms = get_forms(r.url, soup, blacklist)
-            for form in all_forms:
-                if form not in forms:
-                    forms.append(form)
-                    f_out.write(f'{form}\n')
-
-            # get all src attribute values
-            all_src = get_src(r.url, soup, blacklist)
-            for source in all_src:
-                if source not in sources:
-                    sources.append(source)
-                    src_out.write(f'{source}\n')
-
-
-            # get all onclick attribute values
-            all_clicks = get_click(r.url, soup, blacklist)
-            for click in all_clicks:
-                if click not in clicks:
-                    clicks.append(click)
-                    c_out.write(f'{click}\n')
-
-            # get hrefs, emails, sub domains.
-            all_hrefs, all_emails, all_subs, all_x = get_links(
-                    master,
-                    dom,
-                    r.url,
-                    soup,
-                    blacklist
-                )
-
-
-            # sort emails
-            for email in all_emails:
-                if email not in emails:
-                    emails.append(email)
-                    e_out.write(f'{email}\n')
-
-            # sort sub domains
-            for sub in all_subs:
-                if sub not in subs:
-                    subs.append(sub)
-                    s_out.write(f'{sub}\n')
-
-            # sort misc
-            for m in all_x:
-                if m not in misc:
-                    misc.append(m)
-                    m_out.write(f'{m}\n')
-
-            # sort urls
-            webmap_links = [target['url'] for target in webmap]
-            for ref in all_hrefs:
-                if ref not in webmap_links:
-                    webmap.append({'url': str(ref)})
-                    out.write(f'{ref}\n')
-
-            sleep(rate_limit)
+    while i < len(webmap):
+        # we pick up some jankiness from /robots.txt
+        if webmap[i].count('*'):
+            print(f'skipping: {webmap[i]}')
             i += 1
+            continue
+
+        print(f'scanning: {webmap[i]}')
+
+        # raise rate limit if we error out on request.
+        try:
+            r = s.get(webmap[i], timeout = rate_limit + 1)
+        except Exception as e:
+            rate_limit += 1
+            print(f'error: {e}')
+            print(f'raising rate limit to {rate_limit}')
+            i += 1
+            continue
+
+        # make soup
+        soup = BeautifulSoup(r.text, 'lxml')
+
+        # get forms and write them to forms.txt
+        all_forms = get_forms(r.url, soup, blacklist)
+        for form in all_forms:
+            if form not in forms:
+                forms.append(form)
+
+        # get all src attribute values
+        all_src = get_src(r.url, soup, blacklist)
+        for source in all_src:
+            if source not in sources:
+                sources.append(source)
 
 
+        # get all onclick attribute values
+        all_clicks = get_click(r.url, soup, blacklist)
+        for click in all_clicks:
+            if click not in clicks:
+                clicks.append(click)
+
+        # get hrefs, emails, sub domains.
+        all_hrefs, all_emails, all_subs, all_x = get_links(
+                master,
+                dom,
+                r.url,
+                soup,
+                blacklist
+            )
+
+        # sort emails
+        for email in all_emails:
+            if email not in emails:
+                emails.append(email)
+
+        # sort sub domains
+        for sub in all_subs:
+            if sub not in subs:
+                subs.append(sub)
+
+        # sort misc
+        for m in all_x:
+            if m not in misc:
+                misc.append(m)
+
+        # sort urls
+        for ref in all_hrefs:
+            if ref not in webmap:
+                webmap.append(ref)
+
+        sleep(rate_limit)
+        i += 1
 
 
+    for i in sorted(webmap):
+        with open(folder + '/output.txt', 'a') as out:
+            out.write(f'{i}\n')
+
+    for i in sorted(emails):
+        with open(folder + '/emails.txt', 'a') as out:
+            out.write(f'{i}\n')
+
+    for i in sorted(subs):
+        with open(folder + '/subdomains.txt', 'a') as out:
+            out.write(f'{i}\n')
+
+    for i in sorted(misc):
+        with open(folder + '/external_hrefs.txt', 'a') as out:
+            out.write(f'{i}\n')
+
+    for i in sorted(sources):
+        with open(folder + '/src.txt', 'a') as out:
+            out.write(f'{i}\n')
+
+    for i in sorted(forms):
+        with open(folder + '/forms.txt', 'a') as out:
+            out.write(f'{i}\n')
+
+    for i in sorted(clicks):
+        with open(folder + '/clicks.txt', 'a') as out:
+            out.write(f'{i}\n')
 
 
