@@ -2,6 +2,7 @@
 from time import sleep
 import sys
 import requests
+import lxml
 from bs4 import BeautifulSoup
 import urllib.parse
 
@@ -79,6 +80,21 @@ def get_forms(url, soup, blacklist):
 
     return forms
 
+def get_src(url, soup, blacklist):
+    sources = []
+    for tag in soup.find_all(src = True):
+        tag_soup = BeautifulSoup(str(tag), 'lxml')
+
+
+        for dec in tag_soup.descendants:
+            href = dec.attrs.get('src')
+            if href:
+                result = sanitize(href, url, blacklist)
+                if result and result not in sources:
+                    sources.append(result)
+
+    return sources
+
 def get_robots(url, blacklist):
     hrefs = []
     try:
@@ -143,6 +159,7 @@ if __name__ == '__main__':
     forms = []
     subs = []
     misc = []
+    sources = []
 
     i = 0
     rate_limit = 0
@@ -152,6 +169,7 @@ if __name__ == '__main__':
     open('emails.txt', 'w') as e_out,
     open('subs.txt', 'w') as s_out,
     open('misc.txt', 'w') as m_out,
+    open('src.txt', 'w') as src_out,
     open('forms.txt', 'w') as f_out):
 
         while i < len([target['url'] for target in webmap]):
@@ -182,6 +200,13 @@ if __name__ == '__main__':
                 if form not in forms:
                     forms.append(form)
                     f_out.write(f'{form}\n')
+
+            # get all src tag values
+            all_src = get_src(r.url, soup, blacklist)
+            for source in all_src:
+                if source not in sources:
+                    sources.append(source)
+                    src_out.write(f'{source}\n')
 
             # get hrefs, emails, sub domains.
             all_hrefs, all_emails, all_subs, all_x = get_links(
