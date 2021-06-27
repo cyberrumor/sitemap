@@ -1,5 +1,5 @@
 # sitemap
-Collects a domain's internal pages, subdomains, form action pages, emails, and external hrefs.
+Collects a website's internal hrefs, subdomains, form action pages, emails, src references, onclick references, and external hrefs.
 
 
 This is technically a spider, not a fuzzer. It's way faster than a fuzzer because it doesn't have to guess locations to find them.

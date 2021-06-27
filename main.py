@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from time import sleep
 import sys
+import os
 import requests
 import lxml
 from bs4 import BeautifulSoup
@@ -95,6 +96,20 @@ def get_src(url, soup, blacklist):
 
     return sources
 
+def get_click(url, soup, blacklist):
+    sources = []
+    for tag in soup.find_all(onclick = True):
+        tag_soup = BeautifulSoup(str(tag), 'lxml')
+        for dec in tag_soup.descendants:
+            href = dec.attrs.get('onclick')
+            if href:
+                result = sanitize(href, url, blacklist)
+                if result and result not in sources:
+                    sources.append(result)
+    return sources
+
+
+
 def get_robots(url, blacklist):
     hrefs = []
     try:
@@ -140,6 +155,15 @@ if __name__ == '__main__':
         print('Usage with blacklist file: python3 main.py $(cat blacklist.txt) https://localhost.com')
         exit()
 
+    cd = os.getcwd()
+    folder = os.path.join(cd, 'output')
+    if os.path.exists(folder):
+        print(f'directory {folder} exists. Please delete or rename it and try again.')
+        exit()
+
+    os.mkdir(folder)
+
+
     dom = master.split('https://')[-1]
     dom = dom.split('http://')[-1]
     dom = dom.split('www.')[-1]
@@ -160,17 +184,19 @@ if __name__ == '__main__':
     subs = []
     misc = []
     sources = []
+    clicks = []
 
     i = 0
     rate_limit = 0
 
     with (
-    open('out.txt', 'w') as out,
-    open('emails.txt', 'w') as e_out,
-    open('subs.txt', 'w') as s_out,
-    open('misc.txt', 'w') as m_out,
-    open('src.txt', 'w') as src_out,
-    open('forms.txt', 'w') as f_out):
+    open(folder + '/internal_pages.txt', 'w') as out,
+    open(folder + '/emails.txt', 'w') as e_out,
+    open(folder + '/sub_domains.txt', 'w') as s_out,
+    open(folder + '/external_hrefs.txt', 'w') as m_out,
+    open(folder + '/src_locations.txt', 'w') as src_out,
+    open(folder + '/onclick.txt', 'w') as c_out,
+    open(folder + '/forms.txt', 'w') as f_out):
 
         while i < len([target['url'] for target in webmap]):
             # we pick up some jankiness from /robots.txt
@@ -201,12 +227,20 @@ if __name__ == '__main__':
                     forms.append(form)
                     f_out.write(f'{form}\n')
 
-            # get all src tag values
+            # get all src attribute values
             all_src = get_src(r.url, soup, blacklist)
             for source in all_src:
                 if source not in sources:
                     sources.append(source)
                     src_out.write(f'{source}\n')
+
+
+            # get all onclick attribute values
+            all_clicks = get_click(r.url, soup, blacklist)
+            for click in all_clicks:
+                if click not in clicks:
+                    clicks.append(click)
+                    c_out.write(f'{click}\n')
 
             # get hrefs, emails, sub domains.
             all_hrefs, all_emails, all_subs, all_x = get_links(
