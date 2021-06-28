@@ -85,11 +85,15 @@ def get_src(url, soup, blacklist):
     for tag in soup.find_all(src = True):
         tag_soup = BeautifulSoup(str(tag), 'lxml')
         for dec in tag_soup.descendants:
-            href = dec.attrs.get('src')
-            if href:
-                result = sanitize(href, url, blacklist)
-                if result and result not in sources:
-                    sources.append(result)
+            try:
+                href = dec.attrs.get('src')
+                if href:
+                    result = sanitize(href, url, blacklist)
+                    if result and result not in sources:
+                        sources.append(result)
+            except Exception as e:
+                print(f'error: {e}. dec was {dec}, type(dec) was {type(dec)}')
+                continue
 
     return sources
 
@@ -178,7 +182,7 @@ if __name__ == '__main__':
     subs = []
     misc = []
     sources = []
-    clicks = []
+    # clicks = []
 
     i = 0
     rate_limit = 0
@@ -220,10 +224,10 @@ if __name__ == '__main__':
 
 
         # get all onclick attribute values
-        all_clicks = get_click(r.url, soup, blacklist)
-        for click in all_clicks:
-            if click not in clicks:
-                clicks.append(click)
+        #all_clicks = get_click(r.url, soup, blacklist)
+        #for click in all_clicks:
+        #    if click not in clicks:
+        #        clicks.append(click)
 
         # get hrefs, emails, sub domains.
         all_hrefs, all_emails, all_subs, all_x = get_links(
@@ -281,9 +285,9 @@ if __name__ == '__main__':
         with open(folder + '/action.txt', 'w') as out:
             for i in sorted(forms):
                 out.write(f'{i}\n')
-    if clicks:
-        with open(folder + '/onclick.txt', 'w') as out:
-            for i in sorted(clicks):
-                out.write(f'{i}\n')
+    #if clicks:
+    #    with open(folder + '/onclick.txt', 'w') as out:
+    #        for i in sorted(clicks):
+    #            out.write(f'{i}\n')
 
     print('scan complete.\n')
