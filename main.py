@@ -84,8 +84,6 @@ def get_src(url, soup, blacklist):
     sources = []
     for tag in soup.find_all(src = True):
         tag_soup = BeautifulSoup(str(tag), 'lxml')
-
-
         for dec in tag_soup.descendants:
             href = dec.attrs.get('src')
             if href:
@@ -259,33 +257,33 @@ if __name__ == '__main__':
         sleep(rate_limit)
         i += 1
 
-
-    for i in sorted(webmap):
+    if webmap:
         with open(folder + '/output.txt', 'a') as out:
-            out.write(f'{i}\n')
-
-    for i in sorted(emails):
+            for i in sorted(webmap):
+                out.write(f'{i}\n')
+    if emails:
         with open(folder + '/emails.txt', 'a') as out:
-            out.write(f'{i}\n')
-
-    for i in sorted(subs):
+            for i in sorted(emails):
+                out.write(f'{i}\n')
+    if subs:
         with open(folder + '/subdomains.txt', 'a') as out:
-            out.write(f'{i}\n')
-
-    for i in sorted(misc):
+            for i in sorted(subs):
+                out.write(f'{i}\n')
+    if misc:
         with open(folder + '/external_hrefs.txt', 'a') as out:
-            out.write(f'{i}\n')
-
-    for i in sorted(sources):
+            for i in sorted(misc):
+                out.write(f'{i}\n')
+    if sources:
         with open(folder + '/src.txt', 'a') as out:
-            out.write(f'{i}\n')
-
-    for i in sorted(forms):
+            for i in sorted(sources):
+                out.write(f'{i}\n')
+    if forms:
         with open(folder + '/forms.txt', 'a') as out:
-            out.write(f'{i}\n')
-
-    for i in sorted(clicks):
+            for i in sorted(forms):
+                out.write(f'{i}\n')
+    if clicks:
         with open(folder + '/clicks.txt', 'a') as out:
-            out.write(f'{i}\n')
+            for i in sorted(clicks):
+                out.write(f'{i}\n')
 
-
+    print('scan complete.\n')
