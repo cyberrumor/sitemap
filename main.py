@@ -109,7 +109,7 @@ def get_click(url, soup, blacklist):
                     sources.append(result)
     return sources
 
-def get_robots(url, blacklist):
+def get_robots(s, url, blacklist):
     hrefs = []
     try:
         r = s.get(url + '/robots.txt')
@@ -142,26 +142,7 @@ def get_robots(url, blacklist):
 
     return hrefs
 
-
-if __name__ == '__main__':
-    if sys.argv[1:]:
-        master = sys.argv[-1]
-        blacklist = sys.argv[1:-1]
-
-    else:
-        print('Usage: python3 main.py https://localhost.com')
-        print('Usage with blacklist cli: python3 main.py docs pdf jpg png mp4 mp3 https://localhost.com')
-        print('Usage with blacklist file: python3 main.py $(cat blacklist.txt) https://localhost.com')
-        exit()
-
-    cd = os.getcwd()
-    folder = os.path.join(cd, 'output')
-    if os.path.exists(folder):
-        print(f'directory {folder} exists. Please delete or rename it and try again.')
-        exit()
-
-    os.mkdir(folder)
-
+def run(master, blacklist):
     dom = master.split('https://')[-1]
     dom = dom.split('http://')[-1]
     dom = dom.split('www.')[-1]
@@ -172,7 +153,7 @@ if __name__ == '__main__':
     r.raise_for_status()
 
     webmap = []
-    robolinks = get_robots(master, blacklist)
+    robolinks = get_robots(s, master, blacklist)
     for href in robolinks:
         if href.rstrip('/') not in webmap:
             webmap.append(href)
@@ -261,33 +242,70 @@ if __name__ == '__main__':
         sleep(rate_limit)
         i += 1
 
-    if webmap:
+    return {
+        'href': sorted(webmap),
+        'mailto': sorted(emails),
+        'href_subdomain': sorted(subs),
+        'href_external': sorted(misc),
+        'src': sorted(sources),
+        'action': sorted(forms),
+        #'onclick': sorted(clicks),
+    }
+
+
+
+if __name__ == '__main__':
+    if not sys.argv[1:]:
+        print('Usage: python3 main.py https://localhost.com')
+        print('Usage with blacklist cli: python3 main.py docs pdf jpg png mp4 mp3 https://localhost.com')
+        print('Usage with blacklist file: python3 main.py $(cat blacklist.txt) https://localhost.com')
+        exit()
+
+    master = sys.argv[-1]
+    blacklist = sys.argv[1:-1]
+
+    cd = os.getcwd()
+    folder = os.path.join(cd, 'output')
+
+    if os.path.exists(folder):
+        print(f'directory {folder} exists. Please delete or rename it and try again.')
+        exit()
+
+    os.mkdir(folder)
+
+    sitemap = run(master, blacklist)
+
+    if sitemap['href']:
         with open(folder + '/href.txt', 'w') as out:
-            for i in sorted(webmap):
+            for i in sitemap['href']:
                 out.write(f'{i}\n')
-    if emails:
+    if sitemap['mailto']:
         with open(folder + '/mailto.txt', 'w') as out:
-            for i in sorted(emails):
+            for i in sitemap['mailto']:
                 out.write(f'{i}\n')
-    if subs:
+    if sitemap['href_subdomain']:
         with open(folder + '/href_subdomain.txt', 'w') as out:
-            for i in sorted(subs):
+            for i in sitemap['href_subdomain']:
                 out.write(f'{i}\n')
-    if misc:
+    if sitemap['href_external']:
         with open(folder + '/href_external.txt', 'w') as out:
-            for i in sorted(misc):
+            for i in sitemap['href_external']:
                 out.write(f'{i}\n')
-    if sources:
+    if sitemap['src']:
         with open(folder + '/src.txt', 'w') as out:
-            for i in sorted(sources):
+            for i in sitemap['src']:
                 out.write(f'{i}\n')
-    if forms:
+    if sitemap['action']:
         with open(folder + '/action.txt', 'w') as out:
-            for i in sorted(forms):
+            for i in sitemap['action']:
                 out.write(f'{i}\n')
-    #if clicks:
+    #if sitemap['onclick']:
     #    with open(folder + '/onclick.txt', 'w') as out:
-    #        for i in sorted(clicks):
+    #        for i in sitemap['onclick']:
     #            out.write(f'{i}\n')
 
-    print('scan complete.\n')
+    print('scan complete')
+
+
+
+
