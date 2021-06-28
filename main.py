@@ -258,31 +258,31 @@ if __name__ == '__main__':
         i += 1
 
     if webmap:
-        with open(folder + '/output.txt', 'a') as out:
+        with open(folder + '/href.txt', 'w') as out:
             for i in sorted(webmap):
                 out.write(f'{i}\n')
     if emails:
-        with open(folder + '/emails.txt', 'a') as out:
+        with open(folder + '/mailto.txt', 'w') as out:
             for i in sorted(emails):
                 out.write(f'{i}\n')
     if subs:
-        with open(folder + '/subdomains.txt', 'a') as out:
+        with open(folder + '/href_subdomain.txt', 'w') as out:
             for i in sorted(subs):
                 out.write(f'{i}\n')
     if misc:
-        with open(folder + '/external_hrefs.txt', 'a') as out:
+        with open(folder + '/href_external.txt', 'w') as out:
             for i in sorted(misc):
                 out.write(f'{i}\n')
     if sources:
-        with open(folder + '/src.txt', 'a') as out:
+        with open(folder + '/src.txt', 'w') as out:
             for i in sorted(sources):
                 out.write(f'{i}\n')
     if forms:
-        with open(folder + '/forms.txt', 'a') as out:
+        with open(folder + '/action.txt', 'w') as out:
             for i in sorted(forms):
                 out.write(f'{i}\n')
     if clicks:
-        with open(folder + '/clicks.txt', 'a') as out:
+        with open(folder + '/onclick.txt', 'w') as out:
             for i in sorted(clicks):
                 out.write(f'{i}\n')
 
