@@ -3,7 +3,6 @@ from time import sleep
 import sys
 import os
 import requests
-import lxml
 from bs4 import BeautifulSoup
 import urllib.parse
 
@@ -83,7 +82,7 @@ def get_forms(url, soup, blacklist):
 def get_src(url, soup, blacklist):
     sources = []
     for tag in soup.find_all(src = True):
-        tag_soup = BeautifulSoup(str(tag), 'lxml')
+        tag_soup = BeautifulSoup(str(tag), 'html.parser')
         for dec in tag_soup.descendants:
             try:
                 href = dec.attrs.get('src')
@@ -100,7 +99,7 @@ def get_src(url, soup, blacklist):
 def get_click(url, soup, blacklist):
     sources = []
     for tag in soup.find_all(onclick = True):
-        tag_soup = BeautifulSoup(str(tag), 'lxml')
+        tag_soup = BeautifulSoup(str(tag), 'html.parser')
         for dec in tag_soup.descendants:
             href = dec.attrs.get('onclick')
             if href:
@@ -189,7 +188,7 @@ def run(master, blacklist):
             continue
 
         # make soup
-        soup = BeautifulSoup(r.text, 'lxml')
+        soup = BeautifulSoup(r.text, 'html.parser')
 
         # get forms and write them to forms.txt
         all_forms = get_forms(r.url, soup, blacklist)
