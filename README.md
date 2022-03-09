@@ -18,13 +18,6 @@ Usage with blacklist cli: ```python3 main.py jpg png pdf mp https://localhost.co
 
 Usage with blacklist file: ```python3 main.py $(cat blacklist.txt) https://localhost.com```
 
-Outputs to folder called `output`, references are sorted by type, alphabetically, in the following files:
-- `href.txt` = hrefs on the same domain, stripped of arguments. Additions here are crawled.
-- `mailto.txt` = any "mailto:" addresses, or any other href containing "@", not crawled.
-- `href_subdomains.txt` = hrefs on subdomains of original target, stripped of arguments, not crawled.
-- `href_external.txt` = hrefs leading offsite, with arguments, not crawled.
-- `src.txt` = "src" value of any tag containing "src" key, not crawled.
-- `action.txt` = form action pages, not crawled.
-- `onclick.txt` = "onclick" value of any tag containing "onclick" key, not crawled.
-
+Outputs status to stdout, outputs goodies to stderr. To output to a file, just use output redirection:
+```python3 main.py https://localhost.com 2>output.txt```
 

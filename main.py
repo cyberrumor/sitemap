@@ -91,7 +91,8 @@ def get_src(url, soup, blacklist):
                     if result and result not in sources:
                         sources.append(result)
             except Exception as e:
-                print(f'error: {e}. dec was {dec}, type(dec) was {type(dec)}')
+                # until we can sort better, silently ignore dec with no attrs.
+                # print(f'error: {e}. dec was {dec}, type(dec) was {type(dec)}')
                 continue
 
     return sources
@@ -169,21 +170,24 @@ def run(master, blacklist):
 
 
     while i < len(webmap):
+
+        print(webmap[i], file = sys.stderr, flush = True)
+
         # we pick up some jankiness from /robots.txt
         if webmap[i].count('*'):
-            print(f'skipping: {webmap[i]}')
+            print(f'skipping: {webmap[i]}', flush = True)
             i += 1
             continue
 
-        print(f'scanning: {webmap[i]}')
+        print(f'scanning: {webmap[i]}', flush = True)
 
         # raise rate limit if we error out on request.
         try:
             r = s.get(webmap[i], timeout = rate_limit + 1)
         except Exception as e:
             rate_limit += 1
-            print(f'error: {e}')
-            print(f'raising rate limit to {rate_limit}')
+            print(f'error: {e}', flush = True)
+            print(f'raising rate limit to {rate_limit}', flush = True)
             i += 1
             continue
 
@@ -195,12 +199,14 @@ def run(master, blacklist):
         for form in all_forms:
             if form not in forms:
                 forms.append(form)
+                print(form, file = sys.stderr, flush = True)
 
         # get all src attribute values
         all_src = get_src(r.url, soup, blacklist)
         for source in all_src:
             if source not in sources:
                 sources.append(source)
+                print(source, file = sys.stderr, flush = True)
 
 
         # get all onclick attribute values
@@ -222,34 +228,28 @@ def run(master, blacklist):
         for email in all_emails:
             if email not in emails:
                 emails.append(email)
+                print(email, file = sys.stderr, flush = True)
 
         # sort sub domains
         for sub in all_subs:
             if sub not in subs:
                 subs.append(sub)
+                print(sub, file = sys.stderr, flush = True)
 
         # sort misc
         for m in all_x:
             if m not in misc:
                 misc.append(m)
+                print(m, file = sys.stderr, flush = True)
 
         # sort urls
         for ref in all_hrefs:
             if ref not in webmap:
                 webmap.append(ref)
+                print(ref, file = sys.stderr, flush = True)
 
         sleep(rate_limit)
         i += 1
-
-    return {
-        'href': sorted(webmap),
-        'mailto': sorted(emails),
-        'href_subdomain': sorted(subs),
-        'href_external': sorted(misc),
-        'src': sorted(sources),
-        'action': sorted(forms),
-        #'onclick': sorted(clicks),
-    }
 
 
 
@@ -263,47 +263,9 @@ if __name__ == '__main__':
     master = sys.argv[-1]
     blacklist = sys.argv[1:-1]
 
-    cd = os.getcwd()
-    folder = os.path.join(cd, 'output')
+    run(master, blacklist)
 
-    if os.path.exists(folder):
-        print(f'directory {folder} exists. Please delete or rename it and try again.')
-        exit()
-
-    os.mkdir(folder)
-
-    sitemap = run(master, blacklist)
-
-    if sitemap['href']:
-        with open(folder + '/href.txt', 'w') as out:
-            for i in sitemap['href']:
-                out.write(f'{i}\n')
-    if sitemap['mailto']:
-        with open(folder + '/mailto.txt', 'w') as out:
-            for i in sitemap['mailto']:
-                out.write(f'{i}\n')
-    if sitemap['href_subdomain']:
-        with open(folder + '/href_subdomain.txt', 'w') as out:
-            for i in sitemap['href_subdomain']:
-                out.write(f'{i}\n')
-    if sitemap['href_external']:
-        with open(folder + '/href_external.txt', 'w') as out:
-            for i in sitemap['href_external']:
-                out.write(f'{i}\n')
-    if sitemap['src']:
-        with open(folder + '/src.txt', 'w') as out:
-            for i in sitemap['src']:
-                out.write(f'{i}\n')
-    if sitemap['action']:
-        with open(folder + '/action.txt', 'w') as out:
-            for i in sitemap['action']:
-                out.write(f'{i}\n')
-    #if sitemap['onclick']:
-    #    with open(folder + '/onclick.txt', 'w') as out:
-    #        for i in sitemap['onclick']:
-    #            out.write(f'{i}\n')
-
-    print('scan complete')
+    print('scan complete', flush = True)
 
 
 
