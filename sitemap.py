@@ -168,26 +168,29 @@ def run(master, blacklist):
     i = 0
     rate_limit = 0
 
-
+    # this is not a for loop because we have to append to webmap within the loop.
     while i < len(webmap):
 
         print(webmap[i], file = sys.stderr, flush = True)
 
         # we pick up some jankiness from /robots.txt
         if webmap[i].count('*'):
-            print(f'skipping: {webmap[i]}', flush = True)
+            # this will happen instantly. Only point of print is to preserve progress indicator
+            # only necessary if last item in webmap gets skipped.
+            print(f'skipping [{i + 1}/{len(webmap)}]: {webmap[i]}', flush = True, end = '\r')
             i += 1
             continue
+        else:
+            print(f'scanning [{i + 1}/{len(webmap)}]: {webmap[i]}', flush = True, end = '\r')
 
-        print(f'scanning: {webmap[i]}', flush = True)
 
         # raise rate limit if we error out on request.
         try:
             r = s.get(webmap[i], timeout = rate_limit + 1)
         except Exception as e:
             rate_limit += 1
-            print(f'error: {e}', flush = True)
-            print(f'raising rate limit to {rate_limit}', flush = True)
+            print(f'error: {e}')
+            print(f'raising rate limit to {rate_limit}')
             i += 1
             continue
 
@@ -255,9 +258,9 @@ def run(master, blacklist):
 
 if __name__ == '__main__':
     if not sys.argv[1:]:
-        print('Usage: python3 main.py https://localhost.com')
-        print('Usage with blacklist cli: python3 main.py docs pdf jpg png mp4 mp3 https://localhost.com')
-        print('Usage with blacklist file: python3 main.py $(cat blacklist.txt) https://localhost.com')
+        print('Usage: python3 main.py https://localhost.com 2>output.txt')
+        print('Usage with blacklist cli: python3 main.py docs pdf jpg png mp4 mp3 https://localhost.com 2>output.txt')
+        print('Usage with blacklist file: python3 main.py $(cat blacklist.txt) https://localhost.com 2>output.txt')
         exit()
 
     master = sys.argv[-1]
@@ -265,7 +268,8 @@ if __name__ == '__main__':
 
     run(master, blacklist)
 
-    print('scan complete', flush = True)
+    print('', flush = True)
+    print('scan complete')
 
 
 

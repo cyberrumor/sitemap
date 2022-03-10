@@ -12,12 +12,15 @@ making a guarantee at this time. Any links collected will be subsiquently crawle
 
 additional links. Automatic rate limiting without retry.
 
-Usage: ```python3 main.py https://localhost.com```
+Usage: ```python3 sitemap.py https://localhost.com```
 
-Usage with blacklist cli: ```python3 main.py jpg png pdf mp https://localhost.com```
+Usage with blacklist cli: ```python3 sitemap.py jpg png pdf mp https://localhost.com```
 
-Usage with blacklist file: ```python3 main.py $(cat blacklist.txt) https://localhost.com```
+Usage with blacklist file: ```python3 sitemap.py $(cat blacklist.txt) https://localhost.com```
 
 Outputs status to stdout, outputs goodies to stderr. To output to a file, just use output redirection:
-```python3 main.py https://localhost.com 2>output.txt```
+```python3 sitemap.py https://localhost.com 2>output.txt```
 
+
+Deduplicate and sort output file:
+```python3 deduplicate.py output.txt```
