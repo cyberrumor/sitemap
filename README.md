@@ -1,5 +1,5 @@
 # sitemap
-Compiles a list of a website's subdomains, form action pages, emails, src references, and hrefs. Each href on the same subdomain is added to a list of pages to search for more resources. This effectively maps all publicly accessible locations on an entire website, and sometimes locations that were not intended to be publicly accessible. This is similar to Burp Suite's site mapping feature, but automates accessing pages so you don't have to click through their entire website to get a complete map. Useful for asset discovery, penetration testing, recon, etc. 
+Compiles a list of a website's subdomains, form action pages, emails, src references, and hrefs. Each href on the same subdomain is added to a list of pages to search for more resources. This effectively maps all publicly accessible locations on an entire website, and sometimes locations that were not intended to be publicly accessible. This is similar to Burp Suite's site mapping feature, but automates accessing pages so you don't have to click through their entire website to get a complete map. Useful for asset discovery, penetration testing, recon, and finding places that /sitemap.html excluded.
 
 # Features
 - Automatic rate limiting (without retry).
